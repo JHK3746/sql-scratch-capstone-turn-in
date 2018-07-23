@@ -1,0 +1,98 @@
+{\rtf1\ansi\ansicpg949\cocoartf1561\cocoasubrtf400
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww10800\viewh8400\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 ---1-1-1. Number of campaign and source---\
+SELECT \
+	COUNT(DISTINCT utm_campaign) AS 'No. of Campaigns', \
+  COUNT(DISTINCT utm_source) AS 'No. of Sources'\
+FROM page_visits;\
+\
+---1-1-2. Type of campaign and source---\
+SELECT \
+	DISTINCT utm_campaign AS 'Campaigns', \
+  				 utm_source AS 'Sources'\
+FROM page_visits;\
+\
+---1-2. Name of page on Website---\
+SELECT DISTINCT page_name\
+FROM page_visits;\
+\
+---2-1. No. of first touches of each campaign---\
+WITH \
+	first_touch AS (\
+    SELECT user_id,MIN(timestamp) as first_touch_at\
+    FROM page_visits\
+    GROUP BY user_id),\
+	\
+  ft_resp AS (\
+ 	 SELECT ft.user_id,\
+          ft.first_touch_at,\
+          pv.utm_source,\
+          pv.utm_campaign\
+   FROM first_touch ft\
+   JOIN page_visits pv\
+    ON ft.user_id = pv.user_id\
+    AND ft.first_touch_at = pv.timestamp)\
+\
+SELECT ft_resp.utm_source AS 'Source', ft_resp.utm_campaign AS 'Campaign',\
+       COUNT(*) AS 'First touch'\
+FROM ft_resp\
+GROUP BY 1,2\
+ORDER BY 3 DESC;   \
+\
+---2-2. No. of last touches of each campaign---\
+WITH \
+	last_touch AS (\
+    SELECT user_id, Max(timestamp) as last_touch_at\
+    FROM page_visits\
+    GROUP BY user_id),\
+	\
+  lt_resp AS (\
+ 	 SELECT lt.user_id,\
+          lt.last_touch_at,\
+          pv.utm_source,\
+          pv.utm_campaign\
+   FROM last_touch lt\
+   JOIN page_visits pv\
+    ON lt.user_id = pv.user_id\
+    AND lt.last_touch_at = pv.timestamp)\
+\
+SELECT lt_resp.utm_source AS 'Source', lt_resp.utm_campaign AS 'Campaign',\
+       COUNT(*) AS 'Last touch'\
+FROM lt_resp\
+GROUP BY 1,2\
+ORDER BY 3 DESC;\
+\
+---2-3. No. of visitors make purchase---\
+SELECT page_name AS 'Page', COUNT(*) AS 'No. of visitors'\
+FROM page_visits\
+WHERE page_name = '4 - purchase'\
+GROUP BY page_name;\
+\
+---2-4. No. of last touches of campaign make purchase---\
+WITH \
+	last_touch AS (\
+		SELECT user_id, MAX(timestamp) AS last_touch_at\
+		FROM page_visits\
+		WHERE page_name = '4 - purchase'\
+		GROUP BY user_id),\
+ \
+  lt_resp AS (\
+ 	  SELECT lt.user_id,\
+           lt.last_touch_at,\
+           pv.utm_source,\
+           pv.utm_campaign\
+    FROM last_touch lt\
+    JOIN page_visits pv\
+     ON lt.user_id = pv.user_id\
+     AND lt.last_touch_at = pv.timestamp)\
+\
+SELECT lt_resp.utm_source AS 'Source', lt_resp.utm_campaign AS 'Campaign',\
+       COUNT(*) AS 'Purchase'\
+FROM lt_resp\
+GROUP BY 1,2\
+ORDER BY 3 DESC;}
